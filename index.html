@@ -148,16 +148,16 @@
                     <div class="info-card-value" id="pump-status">Inattiva</div>
                 </div>
                 <div class="info-card">
-                    <div class="info-card-title">Target Ideale</div>
-                    <div class="info-card-value" id="target-ideal">65%</div>
-                </div>
-                <div class="info-card">
-                    <div class="info-card-title">Sensore HW-390</div>
-                    <div class="info-card-value" style="color: var(--green);">Connesso (A0)</div>
+                    <div class="info-card-title">Valore Grezzo Sensore</div>
+                    <div class="info-card-value" id="raw-adc-value" style="color: var(--yellow);">0 ADC</div>
                 </div>
                 <div class="info-card">
                     <div class="info-card-title">Modulo Wi-Fi</div>
                     <div class="info-card-value" style="color: var(--light-green);">ESP-01 Pronto</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Target Ideale</div>
+                    <div class="info-card-value" id="target-ideal">65%</div>
                 </div>
             </div>
             
@@ -196,16 +196,17 @@
     </div>
 
     <script>
+        // Array con le specifiche. Configura minAdc e maxAdc in base ai sensori V1 (220-490) o V2 (220-605)
         const piantine = [
-            { id: "basilico", nome: "Basilico", scientifico: "Ocimum basilicum", umidita: 28, icona: "🪴", target: "70%" },
-            { id: "menta", nome: "Menta", scientifico: "Mentha spicata", umidita: 58, icona: "🍃", target: "65%" },
-            { id: "prezzemolo", nome: "Prezzemolo", scientifico: "Petroselinum crispum", umidita: 78, icona: "🌿", target: "60%" },
-            { id: "erba", nome: "Erba Cipollina", scientifico: "Allium schoenoprasum", umidita: 42, icona: "🌱", target: "55%" }
+            { indice: 0, id: "basilico", nome: "Basilico", scientifico: "Ocimum basilicum", minAdc: 220, maxAdc: 605, umidita: 50, raw: 0, icona: "🪴", target: "70%" },
+            { indice: 1, id: "menta", nome: "Menta", scientifico: "Mentha spicata", minAdc: 220, maxAdc: 490, umidita: 50, raw: 0, icona: "🍃", target: "65%" },
+            { indice: 2, id: "prezzemolo", nome: "Prezzemolo", scientifico: "Petroselinum crispum", minAdc: 220, maxAdc: 490, umidita: 50, raw: 0, icona: "🌿", target: "60%" },
+            { indice: 3, id: "erba", nome: "Erba Cipollina", scientifico: "Allium schoenoprasum", minAdc: 220, maxAdc: 605, umidita: 50, raw: 0, icona: "🌱", target: "55%" }
         ];
 
         let piantaSelezionata = null;
 
-        // Funzione per scaricare i dati reali da Google Sheets (tramite doGet)
+        // Funzione per scaricare i dati reali da Google Sheets
         async function aggiornaDatiDaCloud() {
             const urlWebapp = "https://script.google.com/macros/s/AKfycbxKuAvyvBa0F8xmJBxRJj_H8VTnstfcaSYQXsBge-MVDlh8-Irk409WTtVr-IKSi1XJ/exec";
             
@@ -214,29 +215,26 @@
                 let dati = await response.json();
                 
                 if (dati.basilico !== undefined) {
-                    piantine[0].umidita = calcolaPercentualeUmidita('basilico', dati.basilico);
-                    piantine[1].umidita = calcolaPercentualeUmidita('menta', dati.menta);
-                    piantine[2].umidita = calcolaPercentualeUmidita('prezzemolo', dati.prezzemolo);
-                    piantine[3].umidita = calcolaPercentualeUmidita('erba', dati.cipollina);
+                    piantine[0].raw = dati.basilico;
+                    piantine[1].raw = dati.menta;
+                    piantine[2].raw = dati.prezzemolo;
+                    piantine[3].raw = dati.cipollina;
+
+                    piantine.forEach(p => { p.umidita = calcolaPercentualeUmidita(p.raw, p.minAdc, p.maxAdc); });
                     
                     renderHome();
-                    if (piantaSelezionata) {
-                        updateDetailView();
-                    }
-                    console.log("Dati aggiornati dal Cloud con successo!");
+                    if (piantaSelezionata) updateDetailView();
                 }
             } catch (error) {
                 console.error("Errore nel recupero dati:", error);
+                renderHome(); 
             }
         }
 
-        // Conversione dei valori grezzi del sensore capacitivo HW-390 in percentuale
-        function calcolaPercentualeUmidita(tipo, valoreAdc) {
+        // Conversione dei valori grezzi con min e max personalizzati
+        function calcolaPercentualeUmidita(valoreAdc, minAdc, maxAdc) {
             let intVal = parseInt(valoreAdc);
             if (isNaN(intVal)) return 50;
-            
-            let minAdc = 280; // Completamente bagnato
-            let maxAdc = 550; // Completamente secco
             
             let percentuale = 100 - ((intVal - minAdc) * 100 / (maxAdc - minAdc));
             if (percentuale > 100) percentuale = 100;
@@ -244,7 +242,6 @@
             return Math.round(percentuale);
         }
 
-        // Aggiornamento automatico ogni 5 minuti (300000 ms)
         setInterval(aggiornaDatiDaCloud, 300000);
 
         function getStatusInfo(umidita) {
@@ -298,6 +295,7 @@
         function updateDetailView() {
             const status = getStatusInfo(piantaSelezionata.umidita);
             document.getElementById("detail-humidity-val").innerText = piantaSelezionata.umidita + "%";
+            document.getElementById("raw-adc-value").innerText = piantaSelezionata.raw + " ADC"; // Mostra il valore grezzo
             
             const circle = document.getElementById("detail-circle");
             circle.style.background = `conic-gradient(${status.color} ${piantaSelezionata.umidita}%, #e9edc9 0%)`;
@@ -309,29 +307,44 @@
             renderHome();
         }
 
-        function triggerWatering() {
+        // ==========================================
+        // COMANDO REALE DI IRRIGAZIONE (Ignora Cooldown)
+        // ==========================================
+        async function triggerWatering() {
             const pumpEl = document.getElementById("pump-status");
-            pumpEl.innerText = "In funzione... 💧";
-            pumpEl.style.color = "var(--green)";
-
-            let targetHum = 85;
-            let currentHum = piantaSelezionata.umidita;
+            pumpEl.innerText = "Invio comando... ⏳";
+            pumpEl.style.color = "var(--text-dark)";
             
-            let interval = setInterval(() => {
-                if (currentHum < targetHum) {
-                    currentHum += 2;
-                    piantaSelezionata.umidita = currentHum;
-                    updateDetailView();
-                } else {
-                    clearInterval(interval);
-                    pumpEl.innerText = "Completato ✅";
-                    setTimeout(() => { pumpEl.innerText = "Inattiva"; pumpEl.style.color = "var(--text-dark)"; }, 3000);
-                }
-            }, 80);
+            // INSERISCI QUI L'IP CHE LEGGI DAL MONITOR SERIALE
+            const ipEsp = "192.168.1.50"; 
+            
+            const urlComando = `http://${ipEsp}/WATER_${piantaSelezionata.indice}`;
 
-            appendChatMessage(`Ho avviato la pompa per il ${piantaSelezionata.nome}! L'umidità sta risalendo.`, 'ai');
+            try {
+                // Invia la richiesta HTTP in locale senza blocchi CORS
+                await fetch(urlComando, { method: 'GET', mode: 'no-cors' });
+                
+                pumpEl.innerText = "Avviata! 💧";
+                pumpEl.style.color = "var(--green)";
+                appendChatMessage(`Ho forzato l'avvio della pompa per il ${piantaSelezionata.nome}! L'irrigazione sta avvenendo adesso.`, 'ai');
+                
+                setTimeout(() => { 
+                    pumpEl.innerText = "Completato ✅"; 
+                    setTimeout(() => {
+                        pumpEl.innerText = "Inattiva"; 
+                        pumpEl.style.color = "var(--text-dark)";
+                    }, 3000);
+                }, 4000);
+            } catch (error) {
+                console.error("Errore Connessione ESP:", error);
+                pumpEl.innerText = "Errore Connessione";
+                pumpEl.style.color = "var(--red)";
+            }
         }
 
+        // ==========================================
+        // J.A.R.V.I.S. Chatbot Logic
+        // ==========================================
         function toggleChat() {
             const chat = document.getElementById("ai-chat");
             chat.style.display = chat.style.display === "flex" ? "none" : "flex";
@@ -341,9 +354,7 @@
         }
 
         function handleKeyPress(e) {
-            if (e.key === 'Enter') {
-                sendUserMessage();
-            }
+            if (e.key === 'Enter') { sendUserMessage(); }
         }
 
         function appendChatMessage(text, sender) {
@@ -352,7 +363,6 @@
             chatBody.scrollTop = chatBody.scrollHeight;
         }
 
-        // J.A.R.V.I.S. Chatbot Logic
         function sendUserMessage() {
             const inputField = document.getElementById("chat-input-field");
             const text = inputField.value.trim();
@@ -363,14 +373,14 @@
 
             setTimeout(() => {
                 const query = text.toLowerCase();
-                let reply = "Ho analizzato i dati dei sensori capacitivi HW-390. Tutto sotto controllo nel sistema Keyestudio!";
+                let reply = "Ho analizzato i dati dei sensori capacitivi. Tutto sotto controllo nel sistema Keyestudio!";
 
                 if (query.includes("basilico")) {
                     const p = piantine.find(x => x.id === 'basilico');
-                    reply = `Il **Basilico** (${p.scientifico}) ha un'umidità del ${p.umidita}%. ${p.umidita < 35 ? '⚠️ Attenzione: il terreno è secco, ti conviene irrigare!' : '✅ I valori sono buoni.'}`;
+                    reply = `Il **Basilico** (${p.scientifico}) ha un'umidità del ${p.umidita}%. (ADC: ${p.raw}) ${p.umidita < 35 ? '⚠️ Attenzione: il terreno è secco!' : '✅ I valori sono buoni.'}`;
                 } else if (query.includes("menta")) {
                     const p = piantine.find(x => x.id === 'menta');
-                    reply = `La **Menta** (${p.scientifico}) è al ${p.umidita}%. Condizioni stabili.`;
+                    reply = `La **Menta** (${p.scientifico}) è al ${p.umidita}%. (ADC: ${p.raw})`;
                 } else if (query.includes("prezzemolo")) {
                     const p = piantine.find(x => x.id === 'prezzemolo');
                     reply = `Il **Prezzemolo** segna un'umidità del ${p.umidita}%. Terreno ben idratato!`;
@@ -380,16 +390,14 @@
                 } else if (query.includes("come stanno") || query.includes("piante") || query.includes("stato")) {
                     reply = `Ecco il resoconto rapido:\n• Basilico: ${piantine[0].umidita}%\n• Menta: ${piantine[1].umidita}%\n• Prezzemolo: ${piantine[2].umidita}%\n• Erba Cipollina: ${piantine[3].umidita}%`;
                 } else if (query.includes("acqua") || query.includes("irrig")) {
-                    reply = "Puoi avviare l'irrigazione direttamente cliccando sulla scheda della piantina e premendo il pulsante 'Annaffia Ora'.";
+                    reply = "Puoi avviare l'irrigazione manualmente cliccando sulla scheda della piantina e premendo 'Annaffia Ora'.";
                 }
 
                 appendChatMessage(reply, 'ai');
             }, 600);
         }
 
-        // Caricamento iniziale e chiamata dati dal cloud all'avvio
-        renderHome();
         aggiornaDatiDaCloud();
     </script>
 </body>
-</html>
+</html
