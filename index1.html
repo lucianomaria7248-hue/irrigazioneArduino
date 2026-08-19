@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. Smart Garden</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f1;
+            --card-bg: #ffffff;
+            --text-dark: #1e3d2f;
+            --text-light: #52796f;
+            --green: #2d6a4f;
+            --light-green: #52b788;
+            --yellow: #f4a261;
+            --red: #e76f51;
+            --whatsapp-green: #1b4332;
+            --whatsapp-light: #d8f3dc;
+        }
+        
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); margin: 0; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 414px; background-color: var(--bg-color); min-height: 100vh; position: relative; padding: 20px; box-sizing: border-box; overflow-x: hidden; padding-bottom: 90px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .animated { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Home Page */
+        .main-title { color: var(--text-dark); margin-bottom: 5px; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
+        .main-subtitle { color: var(--text-light); font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
+        
+        .plant-card { background: var(--card-bg); border-radius: 22px; padding: 18px; margin-bottom: 18px; cursor: pointer; box-shadow: 0 8px 20px rgba(45, 106, 79, 0.06); transition: transform 0.25s ease, box-shadow 0.25s ease; display: flex; flex-direction: column; border-left: 6px solid var(--green); }
+        .plant-card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(45, 106, 79, 0.12); }
+        .card-header { display: flex; align-items: center; margin-bottom: 12px; justify-content: space-between; }
+        .plant-info-group { display: flex; align-items: center; gap: 15px; }
+        .plant-icon { font-size: 32px; background: #e8f5e9; padding: 10px; border-radius: 16px; display: flex; align-items: center; justify-content: center; transition: transform 0.3s; }
+        .plant-card:hover .plant-icon { transform: scale(1.1) rotate(5deg); }
+        .plant-title { font-weight: 700; font-size: 18px; color: var(--text-dark); margin: 0; }
+        .plant-sci-home { font-size: 12px; color: var(--text-light); font-style: italic; margin: 0; }
+        
+        .status-badge { font-size: 11px; font-weight: bold; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .progress-container { background-color: #e9edc9; border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 8px; }
+        .progress-bar { height: 100%; width: 0%; transition: width 1.2s cubic-bezier(0.1, 1, 0.1, 1), background-color 0.5s; }
+
+        /* Detail Page */
+        .hidden { display: none !important; }
+        .header-detail { display: flex; align-items: center; margin-bottom: 20px; }
+        .btn-back { background: var(--card-bg); border: none; font-size: 18px; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; color: var(--text-dark); font-weight: bold; transition: background 0.2s; }
+        .btn-back:hover { background: #e2e8f0; }
+        .detail-titles { margin-left: 15px; }
+        .detail-name { font-size: 22px; font-weight: 800; color: var(--text-dark); margin: 0; }
+        .detail-scientific { font-size: 13px; font-style: italic; color: var(--text-light); margin: 0; }
+        
+        .photo-container { width: 100%; height: 170px; background: #d8f3dc; border-radius: 20px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--green); font-weight: bold; border: 2px dashed var(--light-green); gap: 8px; position: relative; overflow: hidden; }
+        .photo-container span { font-size: 35px; }
+        
+        .control-panel { display: flex; align-items: center; justify-content: space-around; background: var(--card-bg); padding: 20px; border-radius: 22px; box-shadow: 0 8px 20px rgba(45, 106, 79, 0.06); margin-bottom: 20px; }
+        
+        /* Circle Animation */
+        .circle-wrap { width: 110px; height: 110px; background: #e9edc9; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; }
+        .circle-fill { position: absolute; top: 0; left: 0; width: 110px; height: 110px; border-radius: 50%; background: conic-gradient(var(--green) 0%, #e9edc9 0%); transition: background 0.8s cubic-bezier(0.1, 1, 0.1, 1); }
+        .circle-inner { width: 88px; height: 88px; background: var(--card-bg); border-radius: 50%; position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: var(--text-dark); }
+        .circle-inner small { font-size: 10px; color: var(--text-light); text-transform: uppercase; }
+        
+        .btn-water { background: var(--green); color: white; border: none; padding: 15px 22px; border-radius: 18px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(45, 106, 79, 0.3); display: flex; align-items: center; gap: 8px; transition: transform 0.15s, background 0.2s; }
+        .btn-water:active { transform: scale(0.93); background: var(--light-green); }
+
+        /* Rich Info Grid */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .info-card { background: var(--card-bg); padding: 15px; border-radius: 18px; box-shadow: 0 4px 10px rgba(45, 106, 79, 0.04); }
+        .info-card-title { font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .info-card-value { font-size: 15px; color: var(--text-dark); font-weight: bold; }
+
+        .history-box { background: var(--card-bg); border-radius: 20px; padding: 18px; box-shadow: 0 8px 20px rgba(45, 106, 79, 0.06); }
+        .history-title { font-size: 15px; font-weight: bold; color: var(--text-dark); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f2f6; font-size: 13px; color: var(--text-light); }
+        .history-item:last-child { border-bottom: none; }
+
+        /* J.A.R.V.I.S. Chat Bot Style */
+        .ai-fab { position: fixed; bottom: 25px; right: 20px; width: 60px; height: 60px; background: var(--card-bg); border-radius: 50%; box-shadow: 0 6px 20px rgba(45, 106, 79, 0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; border: 2px solid var(--light-green); transition: transform 0.2s; }
+        .ai-fab:hover { transform: scale(1.08); }
+        
+        .gemini-botanical-logo { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .gemini-botanical-logo svg { width: 100%; height: 100%; fill: var(--green); animation: pulseLogo 3s infinite ease-in-out; }
+        @keyframes pulseLogo { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+        .chat-popup { position: fixed; bottom: 95px; right: 20px; width: 340px; height: 420px; background: #fdfbf7; border-radius: 20px; box-shadow: 0 12px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 999; overflow: hidden; border: 1px solid #c8d6af; transform-origin: bottom right; animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popUp { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+        
+        .chat-header { background: var(--whatsapp-green); color: white; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; font-size: 15px; }
+        .chat-header span { display: flex; align-items: center; gap: 10px; }
+        .close-chat { cursor: pointer; font-size: 18px; opacity: 0.8; }
+        
+        .chat-body { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: var(--whatsapp-light); }
+        .bubble { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.05); word-wrap: break-word; }
+        .bubble.ai { background: var(--card-bg); color: var(--text-dark); align-self: flex-start; border-top-left-radius: 2px; }
+        .bubble.user { background: #d8f3dc; color: var(--text-dark); align-self: flex-end; border-top-right-radius: 2px; }
+        
+        .chat-input-area { padding: 10px; background: #ffffff; display: flex; gap: 8px; border-top: 1px solid #e2e8f0; }
+        .chat-input { flex: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 13px; }
+        .chat-input:focus { border-color: var(--green); }
+        .chat-send { background: var(--green); color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- HOME PAGE -->
+        <div id="home-page" class="animated">
+            <h1 class="main-title">Smart Garden 🌱</h1>
+            <p class="main-subtitle">Controllo hardware Keyestudio & ESP-01 attivo. Chiedi a J.A.R.V.I.S. lo stato delle tue colture in qualsiasi momento!</p>
+            <div id="plants-list"></div>
+        </div>
+
+        <!-- DETAIL PAGE -->
+        <div id="detail-page" class="hidden animated">
+            <div class="header-detail">
+                <button class="btn-back" onclick="showHome()">←</button>
+                <div class="detail-titles">
+                    <h1 id="detail-name" class="detail-name">Nome</h1>
+                    <p id="detail-scientific" class="detail-scientific">Scientifico</p>
+                </div>
+            </div>
+            
+            <div class="photo-container">
+                <span>📷</span>
+                <div>Spazio foto reale piantina</div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="circle-wrap">
+                    <div id="detail-circle" class="circle-fill"></div>
+                    <div class="circle-inner">
+                        <span id="detail-humidity-val">0%</span>
+                        <small>Umidità</small>
+                    </div>
+                </div>
+                <button class="btn-water" onclick="triggerWatering()">
+                    <span>💧</span> Annaffia Ora
+                </button>
+            </div>
+
+            <!-- SCHEDA INFORMAZIONI DETTAGLIATE -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-title">Stato Pompa</div>
+                    <div class="info-card-value" id="pump-status">Inattiva</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Target Ideale</div>
+                    <div class="info-card-value" id="target-ideal">65%</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Sensore HW-390</div>
+                    <div class="info-card-value" style="color: var(--green);">Connesso (A0)</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-title">Modulo Wi-Fi</div>
+                    <div class="info-card-value" style="color: var(--light-green);">ESP-01 Pronto</div>
+                </div>
+            </div>
+            
+            <div class="history-box">
+                <div class="history-title">
+                    <span>Storico Attività</span>
+                    <span style="font-size: 11px; color: var(--text-light); font-weight: normal;">Log in tempo reale</span>
+                </div>
+                <div class="history-item"><span>Oggi, 08:30</span><span>Polling sensore capacitivo OK</span></div>
+                <div class="history-item"><span>Ieri, 19:45</span><span>Ciclo automatico completato</span></div>
+                <div class="history-item"><span>17 Ago, 20:00</span><span>Calibrazione soglie eseguita</span></div>
+            </div>
+        </div>
+
+        <!-- J.A.R.V.I.S. FAB & FULL CHAT -->
+        <div class="ai-fab" onclick="toggleChat()" title="Chatta con J.A.R.V.I.S.">
+            <div class="gemini-botanical-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.22.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            </div>
+        </div>
+        
+        <div id="ai-chat" class="chat-popup">
+            <div class="chat-header">
+                <span>🤖 J.A.R.V.I.S. Assistant</span>
+                <span class="close-chat" onclick="toggleChat()">✕</span>
+            </div>
+            <div class="chat-body" id="chat-body">
+                <div class="bubble ai">Ciao Luciano! Sono J.A.R.V.I.S. Chiedimi pure come stanno le piantine (es. "Come sta il basilico?" o "C'è bisogno d'acqua?").</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input-field" class="chat-input" placeholder="Scrivi a J.A.R.V.I.S...." onkeypress="handleKeyPress(event)">
+                <button class="chat-send" onclick="sendUserMessage()">➤</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const piantine = [
+            { id: "basilico", nome: "Basilico", scientifico: "Ocimum basilicum", umidita: 28, icona: "🪴", target: "70%" },
+            { id: "menta", nome: "Menta", scientifico: "Mentha spicata", umidita: 58, icona: "🍃", target: "65%" },
+            { id: "prezzemolo", nome: "Prezzemolo", scientifico: "Petroselinum crispum", umidita: 78, icona: "🌿", target: "60%" },
+            { id: "erba", nome: "Erba Cipollina", scientifico: "Allium schoenoprasum", umidita: 42, icona: "🌱", target: "55%" }
+        ];
+
+        let piantaSelezionata = null;
+
+        // Funzione per scaricare i dati reali da Google Sheets (tramite doGet)
+        async function aggiornaDatiDaCloud() {
+            const urlWebapp = "https://script.google.com/macros/s/AKfycbxKuAvyvBa0F8xmJBxRJj_H8VTnstfcaSYQXsBge-MVDlh8-Irk409WTtVr-IKSi1XJ/exec";
+            
+            try {
+                let response = await fetch(urlWebapp);
+                let dati = await response.json();
+                
+                if (dati.basilico !== undefined) {
+                    piantine[0].umidita = calcolaPercentualeUmidita('basilico', dati.basilico);
+                    piantine[1].umidita = calcolaPercentualeUmidita('menta', dati.menta);
+                    piantine[2].umidita = calcolaPercentualeUmidita('prezzemolo', dati.prezzemolo);
+                    piantine[3].umidita = calcolaPercentualeUmidita('erba', dati.cipollina);
+                    
+                    renderHome();
+                    if (piantaSelezionata) {
+                        updateDetailView();
+                    }
+                    console.log("Dati aggiornati dal Cloud con successo!");
+                }
+            } catch (error) {
+                console.error("Errore nel recupero dati:", error);
+            }
+        }
+
+        // Conversione dei valori grezzi del sensore capacitivo HW-390 in percentuale
+        function calcolaPercentualeUmidita(tipo, valoreAdc) {
+            let intVal = parseInt(valoreAdc);
+            if (isNaN(intVal)) return 50;
+            
+            let minAdc = 280; // Completamente bagnato
+            let maxAdc = 550; // Completamente secco
+            
+            let percentuale = 100 - ((intVal - minAdc) * 100 / (maxAdc - minAdc));
+            if (percentuale > 100) percentuale = 100;
+            if (percentuale < 0) percentuale = 0;
+            return Math.round(percentuale);
+        }
+
+        // Aggiornamento automatico ogni 5 minuti (300000 ms)
+        setInterval(aggiornaDatiDaCloud, 300000);
+
+        function getStatusInfo(umidita) {
+            if (umidita < 35) return { color: 'var(--red)', label: 'Secco - Irrigare' };
+            if (umidita <= 65) return { color: 'var(--yellow)', label: 'Medio' };
+            return { color: 'var(--green)', label: 'Ottimale' };
+        }
+
+        function renderHome() {
+            const list = document.getElementById("plants-list");
+            list.innerHTML = ""; 
+
+            piantine.forEach((pianta, index) => {
+                const status = getStatusInfo(pianta.umidita);
+                list.innerHTML += `
+                    <div class="plant-card animated" style="animation-delay: ${index * 0.08}s; border-left-color: ${status.color}" onclick="showDetail('${pianta.id}')">
+                        <div class="card-header">
+                            <div class="plant-info-group">
+                                <div class="plant-icon">${pianta.icona}</div>
+                                <div>
+                                    <h3 class="plant-title">${pianta.nome}</h3>
+                                    <p class="plant-sci-home">${pianta.scientifico}</p>
+                                </div>
+                            </div>
+                            <div class="status-badge" style="background-color: ${status.color}; color: white;">${status.label}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-light); font-weight: bold; margin-top: 5px;">
+                            <span>Umidità Terreno</span>
+                            <span>${pianta.umidita}%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${pianta.umidita}%; background-color: ${status.color}"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function showDetail(id) {
+            piantaSelezionata = piantine.find(p => p.id === id);
+            
+            document.getElementById("detail-name").innerText = piantaSelezionata.nome;
+            document.getElementById("detail-scientific").innerText = piantaSelezionata.scientifico;
+            document.getElementById("target-ideal").innerText = piantaSelezionata.target;
+            updateDetailView();
+            
+            document.getElementById("home-page").classList.add("hidden");
+            document.getElementById("detail-page").classList.remove("hidden");
+        }
+
+        function updateDetailView() {
+            const status = getStatusInfo(piantaSelezionata.umidita);
+            document.getElementById("detail-humidity-val").innerText = piantaSelezionata.umidita + "%";
+            
+            const circle = document.getElementById("detail-circle");
+            circle.style.background = `conic-gradient(${status.color} ${piantaSelezionata.umidita}%, #e9edc9 0%)`;
+        }
+
+        function showHome() {
+            document.getElementById("detail-page").classList.add("hidden");
+            document.getElementById("home-page").classList.remove("hidden");
+            renderHome();
+        }
+
+        function triggerWatering() {
+            const pumpEl = document.getElementById("pump-status");
+            pumpEl.innerText = "In funzione... 💧";
+            pumpEl.style.color = "var(--green)";
+
+            let targetHum = 85;
+            let currentHum = piantaSelezionata.umidita;
+            
+            let interval = setInterval(() => {
+                if (currentHum < targetHum) {
+                    currentHum += 2;
+                    piantaSelezionata.umidita = currentHum;
+                    updateDetailView();
+                } else {
+                    clearInterval(interval);
+                    pumpEl.innerText = "Completato ✅";
+                    setTimeout(() => { pumpEl.innerText = "Inattiva"; pumpEl.style.color = "var(--text-dark)"; }, 3000);
+                }
+            }, 80);
+
+            appendChatMessage(`Ho avviato la pompa per il ${piantaSelezionata.nome}! L'umidità sta risalendo.`, 'ai');
+        }
+
+        function toggleChat() {
+            const chat = document.getElementById("ai-chat");
+            chat.style.display = chat.style.display === "flex" ? "none" : "flex";
+            if(chat.style.display === "flex") {
+                document.getElementById("chat-input-field").focus();
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendUserMessage();
+            }
+        }
+
+        function appendChatMessage(text, sender) {
+            const chatBody = document.getElementById("chat-body");
+            chatBody.innerHTML += `<div class="bubble ${sender}">${text}</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // J.A.R.V.I.S. Chatbot Logic
+        function sendUserMessage() {
+            const inputField = document.getElementById("chat-input-field");
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            appendChatMessage(text, 'user');
+            inputField.value = "";
+
+            setTimeout(() => {
+                const query = text.toLowerCase();
+                let reply = "Ho analizzato i dati dei sensori capacitivi HW-390. Tutto sotto controllo nel sistema Keyestudio!";
+
+                if (query.includes("basilico")) {
+                    const p = piantine.find(x => x.id === 'basilico');
+                    reply = `Il **Basilico** (${p.scientifico}) ha un'umidità del ${p.umidita}%. ${p.umidita < 35 ? '⚠️ Attenzione: il terreno è secco, ti conviene irrigare!' : '✅ I valori sono buoni.'}`;
+                } else if (query.includes("menta")) {
+                    const p = piantine.find(x => x.id === 'menta');
+                    reply = `La **Menta** (${p.scientifico}) è al ${p.umidita}%. Condizioni stabili.`;
+                } else if (query.includes("prezzemolo")) {
+                    const p = piantine.find(x => x.id === 'prezzemolo');
+                    reply = `Il **Prezzemolo** segna un'umidità del ${p.umidita}%. Terreno ben idratato!`;
+                } else if (query.includes("cipollina") || query.includes("erba")) {
+                    const p = piantine.find(x => x.id === 'erba');
+                    reply = `L'**Erba Cipollina** è al ${p.umidita}%. Monitoraggio regolare attivo.`;
+                } else if (query.includes("come stanno") || query.includes("piante") || query.includes("stato")) {
+                    reply = `Ecco il resoconto rapido:\n• Basilico: ${piantine[0].umidita}%\n• Menta: ${piantine[1].umidita}%\n• Prezzemolo: ${piantine[2].umidita}%\n• Erba Cipollina: ${piantine[3].umidita}%`;
+                } else if (query.includes("acqua") || query.includes("irrig")) {
+                    reply = "Puoi avviare l'irrigazione direttamente cliccando sulla scheda della piantina e premendo il pulsante 'Annaffia Ora'.";
+                }
+
+                appendChatMessage(reply, 'ai');
+            }, 600);
+        }
+
+        // Caricamento iniziale e chiamata dati dal cloud all'avvio
+        renderHome();
+        aggiornaDatiDaCloud();
+    </script>
+</body>
+</html>
